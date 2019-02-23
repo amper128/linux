@@ -534,7 +534,6 @@ static int bcm2835_spi_transfer_one(struct spi_master *master,
 {
 	struct bcm2835_spi *bs = spi_master_get_devdata(master);
 	unsigned long spi_hz, clk_hz, cdiv;
-	unsigned long spi_used_hz;
 	unsigned long long xfer_time_us;
 	u32 cs = bcm2835_rd(bs, BCM2835_SPI_CS);
 
@@ -554,7 +553,7 @@ static int bcm2835_spi_transfer_one(struct spi_master *master,
 	} else {
 		cdiv = 0; /* 0 is the slowest we can go */
 	}
-	spi_used_hz = cdiv ? (clk_hz / cdiv) : (clk_hz / 65536);
+	tfr->effective_speed_hz = cdiv ? (clk_hz / cdiv) : (clk_hz / 65536);
 	bcm2835_wr(bs, BCM2835_SPI_CLK, cdiv);
 
 	/* handle all the 3-wire mode */
@@ -581,7 +580,7 @@ static int bcm2835_spi_transfer_one(struct spi_master *master,
 	xfer_time_us = (unsigned long long)tfr->len
 		* 9 /* clocks/byte - SPI-HW waits 1 clock after each byte */
 		* 1000000;
-	do_div(xfer_time_us, spi_used_hz);
+	do_div(xfer_time_us, tfr->effective_speed_hz);
 
 	/* for short requests run polling*/
 	if (xfer_time_us <= BCM2835_SPI_POLLING_LIMIT_US)
