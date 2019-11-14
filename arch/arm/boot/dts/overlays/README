@@ -1642,6 +1642,21 @@ Params: oscillator              Clock frequency for the CAN controller (Hz)
 
         interrupt               GPIO for interrupt signal
 
+Name:   mcp25xxfd-spiX-Y
+Info:   Configures the MCPXXFD CAN controller family on spiX.Y
+Load:   dtoverlay=mcp25xxfd-spiX-Y,<param>=<val>
+Params: oscillator              Clock frequency for the CAN controller (Hz)
+
+        spimaxfrequency         Maximum SPI frequence (Hz)
+
+        interrupt               GPIO for interrupt signal
+
+        rx_interrupt            GPIO for RX interrupt signal (nINT1) (optional)
+
+        xceiver_enable          GPIO for CAN transceiver enable (optional)
+
+        xceiver_active_high     specifiy if CAN transceiver enable pin is
+                                active high (optional, default: active low)
 
 Name:   mcp3008
 Info:   Configures MCP3008 A/D converters

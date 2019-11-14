@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/bcm2835.h>
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@2 {
+		target = <&gpio>;
+		__overlay__ {
+			can_pins: can_spi0_1_pins {
+				brcm,pins = <5>;
+				brcm,function = <BCM2835_FSEL_GPIO_IN>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target-path = "/clocks";
+		__overlay__ {
+			can_osc: can_spi0_1_osc {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <40000000>;
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			can: mcp25xxfd@1 {
+				compatible = "microchip,mcp25xxfd";
+				reg = <1>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&can_pins>;
+				spi-max-frequency = <20000000>;
+				interrupt-parent = <&gpio>;
+				interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+				clocks = <&can_osc>;
+			};
+		};
+	};
+
+	fragment@5 {
+		target = <&spi0>;
+		__dormant__ {
+			can_rx_int: mcp25xxfd@1 {
+				rx-int-gpios = <&gpio 255 GPIO_ACTIVE_LOW>;
+			};
+		};
+	};
+
+	fragment@6 {
+		target = <&gpio>;
+		__dormant__ {
+			can_xceiver_pins: can_spi0_1_xceiver_pins {
+				brcm,pins = <255>;
+				brcm,function = <BCM2835_FSEL_GPIO_OUT>;
+			};
+		};
+	};
+
+	fragment@7 {
+		target-path = "/";
+		__dormant__ {
+			reg_can_xceiver: regulator_can_spi0_1_xceiver {
+				compatible = "regulator-fixed";
+				regulator-name = "can_spi0_1_xceiver";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				gpio = <&gpio 4 GPIO_ACTIVE_HIGH>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&can_xceiver_pins>;
+			};
+		};
+	};
+
+	fragment@8 {
+		target = <&spi0>;
+		__dormant__ {
+			mcp25xxfd@1 {
+				xceiver-supply = <&reg_can_xceiver>;
+			};
+		};
+	};
+
+	__overrides__ {
+		oscillator = <&can_osc>, "clock-frequency:0";
+		spimaxfrequency = <&can>, "spi-max-frequency:0";
+		interrupt = <&can_pins>, "brcm,pins:0", <&can>, "interrupts:0";
+		rx_interrupt = <0>, "+5", <&can_pins>, "brcm,pins:4", <&can_rx_int>, "rx-int-gpios:4";
+		xceiver_enable = <0>, "+6+7+8", <&can_xceiver_pins>, "brcm,pins:0", <&reg_can_xceiver>, "gpio:4";
+		xceiver_active_high = <&reg_can_xceiver>, "enable-active-high?";
+	};
+};
