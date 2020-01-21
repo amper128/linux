@@ -441,6 +441,7 @@ static int rt2800usb_set_device_state(struct rt2x00_dev *rt2x00dev,
 /*
  * Watchdog handlers
  */
+/*
 static void rt2800usb_watchdog(struct rt2x00_dev *rt2x00dev)
 {
 	unsigned int i;
@@ -478,6 +479,7 @@ static void rt2800usb_watchdog(struct rt2x00_dev *rt2x00dev)
 
 	rt2x00usb_watchdog(rt2x00dev);
 }
+*/
 
 /*
  * TX descriptor initialization
@@ -880,7 +882,7 @@ static const struct rt2x00lib_ops rt2800usb_rt2x00_ops = {
 	.link_tuner		= rt2800_link_tuner,
 	.gain_calibration	= rt2800_gain_calibration,
 	.vco_calibration	= rt2800_vco_calibration,
-	.watchdog		= rt2800usb_watchdog,
+//	.watchdog		= rt2800usb_watchdog,
 	.start_queue		= rt2800usb_start_queue,
 	.kick_queue		= rt2x00usb_kick_queue,
 	.stop_queue		= rt2800usb_stop_queue,
