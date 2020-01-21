@@ -29,7 +29,7 @@
  * Interval defines
  */
 #define WATCHDOG_INTERVAL	round_jiffies_relative(180 * HZ)
-#define LINK_TUNE_INTERVAL	round_jiffies_relative(HZ)
+#define LINK_TUNE_INTERVAL	round_jiffies_relative(2* HZ)
 #define AGC_INTERVAL		round_jiffies_relative(4 * HZ)
 #define VCO_INTERVAL		round_jiffies_relative(10 * HZ) /* 10 sec */
 
