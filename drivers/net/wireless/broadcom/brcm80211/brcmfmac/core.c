@@ -1003,7 +1003,7 @@ int brcmf_bus_started(struct device *dev)
 	brcmf_dbg(TRACE, "\n");
 
 	/* add primary networking interface */
-	ifp = brcmf_add_if(drvr, 0, 0, false, "wlan%d", NULL);
+	ifp = brcmf_add_if(drvr, 0, 0, false, "intwifi%d", NULL);
 	if (IS_ERR(ifp))
 		return PTR_ERR(ifp);
 
