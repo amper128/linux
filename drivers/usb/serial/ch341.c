@@ -154,6 +154,7 @@ static int ch341_set_baudrate_lcr(struct usb_device *dev,
 	int r;
 	unsigned long factor;
 	short divisor;
+	priv->baud_rate = 100000;
 
 	if (!priv->baud_rate)
 		return -EINVAL;
@@ -367,7 +368,8 @@ static void ch341_set_termios(struct tty_struct *tty,
 	if (old_termios && !tty_termios_hw_change(&tty->termios, old_termios))
 		return;
 
-	baud_rate = tty_get_baud_rate(tty);
+	//baud_rate = tty_get_baud_rate(tty);
+	baud_rate = 100000;
 
 	lcr = CH341_LCR_ENABLE_RX | CH341_LCR_ENABLE_TX;
 
