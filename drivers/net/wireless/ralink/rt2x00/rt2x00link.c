@@ -382,6 +382,8 @@ static void rt2x00link_tuner(struct work_struct *work)
 void rt2x00link_start_watchdog(struct rt2x00_dev *rt2x00dev)
 {
 	struct link *link = &rt2x00dev->link;
+	
+	return;
 
 	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
 	    rt2x00dev->ops->lib->watchdog && !link->watchdog_disabled)
@@ -392,6 +394,8 @@ void rt2x00link_start_watchdog(struct rt2x00_dev *rt2x00dev)
 
 void rt2x00link_stop_watchdog(struct rt2x00_dev *rt2x00dev)
 {
+	return;
+	
 	cancel_delayed_work_sync(&rt2x00dev->link.watchdog_work);
 }
 
@@ -421,7 +425,7 @@ void rt2x00link_register(struct rt2x00_dev *rt2x00dev)
 	struct link *link = &rt2x00dev->link;
 
 	INIT_DELAYED_WORK(&link->work, rt2x00link_tuner);
-	INIT_DELAYED_WORK(&link->watchdog_work, rt2x00link_watchdog);
+	//INIT_DELAYED_WORK(&link->watchdog_work, rt2x00link_watchdog);
 
 	if (link->watchdog_interval == 0)
 		link->watchdog_interval = WATCHDOG_INTERVAL;
