@@ -2483,31 +2483,78 @@ static int mcp25xxfd_register_check_rx_int(struct mcp25xxfd_priv *priv)
 	return 0;
 }
 
+static int
+mcp25xxfd_register_get_dev_id(const struct mcp25xxfd_priv *priv,
+			     u32 *dev_id, u32 *effective_speed_hz)
+{
+	struct mcp25xxfd_map_buf *buf_rx;
+	struct mcp25xxfd_map_buf *buf_tx;
+	struct spi_transfer xfer[2] = { };
+	int err;
+
+	buf_rx = kzalloc(sizeof(* buf_rx), GFP_KERNEL);
+	if (!buf_rx)
+		return -ENOMEM;
+
+	buf_tx = kzalloc(sizeof(* buf_tx), GFP_KERNEL);
+	if (!buf_tx) {
+		err = -ENOMEM;
+		goto out_kfree_buf_rx;
+	}
+
+	xfer[0].tx_buf = buf_tx;
+	xfer[0].len = sizeof(buf_tx->cmd);
+	xfer[1].rx_buf = buf_rx->data;
+	xfer[1].len = sizeof(dev_id);
+
+	mcp25xxfd_spi_cmd_read(&buf_tx->cmd, MCP25XXFD_REG_DEVID);
+	err = spi_sync_transfer(priv->spi, xfer, ARRAY_SIZE(xfer));
+	if (err)
+		goto out_kfree_buf_tx;
+
+	*dev_id = be32_to_cpup((__be32 *)buf_rx->data);
+	*effective_speed_hz = xfer->effective_speed_hz;
+
+ out_kfree_buf_tx:
+	kfree(buf_tx);
+ out_kfree_buf_rx:
+	kfree(buf_rx);
+
+	return 0;
+}
+
 #define MCP25XXFD_QUIRK_ACTIVE(quirk) \
 	(priv->devtype_data.quirks & MCP25XXFD_QUIRK_##quirk ? '+' : '-')
 
 static int
 mcp25xxfd_register_done(const struct mcp25xxfd_priv *priv)
 {
-	u32 devid;
+	u32 dev_id, effective_speed_hz;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_DEVID, &devid);
+	err = mcp25xxfd_register_get_dev_id(priv, &dev_id,
+					    &effective_speed_hz);
 	if (err)
 		return err;
 
 	netdev_info(priv->ndev,
-		    "%s rev%lu.%lu (%cRX_INT %cMAB_NO_WARN %cCRC_REG %cCRC_RX %cCRC_TX %cECC %cHD) successfully initialized.\n",
+		    "%s rev%lu.%lu (%cRX_INT %cMAB_NO_WARN %cCRC_REG %cCRC_RX %cCRC_TX %cECC %cHD m:%u.%02uMHz r:%u.%02uMHz e:%u.%02uMHz) successfully initialized.\n",
 		    mcp25xxfd_get_model_str(priv),
-		    FIELD_GET(MCP25XXFD_REG_DEVID_ID_MASK, devid),
-		    FIELD_GET(MCP25XXFD_REG_DEVID_REV_MASK, devid),
+		    FIELD_GET(MCP25XXFD_REG_DEVID_ID_MASK, dev_id),
+		    FIELD_GET(MCP25XXFD_REG_DEVID_REV_MASK, dev_id),
 		    priv->rx_int ? '+' : '-',
 		    MCP25XXFD_QUIRK_ACTIVE(MAB_NO_WARN),
 		    MCP25XXFD_QUIRK_ACTIVE(CRC_REG),
 		    MCP25XXFD_QUIRK_ACTIVE(CRC_RX),
 		    MCP25XXFD_QUIRK_ACTIVE(CRC_TX),
 		    MCP25XXFD_QUIRK_ACTIVE(ECC),
-		    MCP25XXFD_QUIRK_ACTIVE(HALF_DUPLEX));
+		    MCP25XXFD_QUIRK_ACTIVE(HALF_DUPLEX),
+		    priv->spi_max_speed_hz_orig / 1000000,
+		    priv->spi_max_speed_hz_orig % 1000000 / 1000 / 100,
+		    priv->spi->max_speed_hz / 1000000,
+		    priv->spi->max_speed_hz % 1000000 / 1000 / 100,
+		    effective_speed_hz / 1000000,
+		    effective_speed_hz % 1000000 / 1000 / 100);
 
 	return 0;
 }
