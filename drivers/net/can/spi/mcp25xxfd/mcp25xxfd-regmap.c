@@ -299,16 +299,33 @@ static int mcp25xxfd_regmap_crc_read(void *context,
 
 	for (i = 0; i < MCP25XXFD_READ_CRC_RETRIES_MAX; i++) {
 		err = mcp25xxfd_regmap_crc_read_one(priv, &msg, val_len);
-		if (err == -EBADMSG) {
-			netdev_dbg(priv->ndev,
-				   "CRC read error at address 0x%04x, length %zd, retrying.\n",
-				   reg, val_len);
-			continue;
-		} else if (err) {
+		if (!err)
+			goto out;
+		if (err != -EBADMSG)
 			return err;
+
+		/* MCP25XXFD_REG_OSC is the first ever reg we read from.
+		 *
+		 * The chip may be in deep sleep and this SPI transfer
+		 * (i.e. the assertion of the CS) will wake the chip
+		 * up. This takes about 3ms. The CRC of this transfer
+		 * is wrong.
+		 *
+		 * Or there isn't a chip at all, in this case the CRC
+		 * will be wrong, too.
+		 *
+		 * In both cases ignore the CRC and copy the read data
+		 * to the caller. It will take care of both cases.
+		 *
+		 */
+		if (reg == MCP25XXFD_REG_OSC) {
+			err = 0;
+			goto out;
 		}
 
-		break;
+		netdev_dbg(priv->ndev,
+			   "CRC read error at address 0x%04x, length %zd, retrying.\n",
+			   reg, val_len);
 	}
 
 	if (err) {
@@ -318,7 +335,7 @@ static int mcp25xxfd_regmap_crc_read(void *context,
 
 		return err;
 	}
-
+ out:
 	memcpy(val_buf, buf_rx->data, val_len);
 
 	return 0;
