@@ -2749,6 +2749,8 @@ static int mcp25xxfd_probe(struct spi_device *spi)
 	return 0;
 
  out_free_candev:
+	spi->max_speed_hz = priv->spi_max_speed_hz_orig;
+
 	free_candev(ndev);
 
 	return err;
