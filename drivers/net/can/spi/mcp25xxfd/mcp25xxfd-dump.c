@@ -665,17 +665,17 @@ void mcp25xxfd_dump(struct mcp25xxfd_priv *priv)
 	BUILD_BUG_ON(sizeof(struct mcp25xxfd_dump_regs) !=
 		     MCP25XXFD_REG_FIFOUA(31) - MCP25XXFD_REG_CON + 4);
 
-	err = regmap_bulk_read(priv->map, MCP25XXFD_REG_CON,
+	err = regmap_bulk_read(priv->map_reg, MCP25XXFD_REG_CON,
 			       regs, sizeof(*regs) / sizeof(u32));
 	if (err)
 		return;
 
-	err = regmap_bulk_read(priv->map, MCP25XXFD_RAM_START,
+	err = regmap_bulk_read(priv->map_reg, MCP25XXFD_RAM_START,
 			       ram, sizeof(*ram) / sizeof(u32));
 	if (err)
 		return;
 
-	err = regmap_bulk_read(priv->map, MCP25XXFD_REG_OSC,
+	err = regmap_bulk_read(priv->map_reg, MCP25XXFD_REG_OSC,
 			       regs_mcp25xxfd, sizeof(*regs_mcp25xxfd) / sizeof(u32));
 	if (err)
 		return;
