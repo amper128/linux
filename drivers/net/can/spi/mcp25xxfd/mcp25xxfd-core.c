@@ -2550,11 +2550,11 @@ mcp25xxfd_register_done(const struct mcp25xxfd_priv *priv)
 		    MCP25XXFD_QUIRK_ACTIVE(ECC),
 		    MCP25XXFD_QUIRK_ACTIVE(HALF_DUPLEX),
 		    priv->spi_max_speed_hz_orig / 1000000,
-		    priv->spi_max_speed_hz_orig % 1000000 / 1000 / 100,
+		    priv->spi_max_speed_hz_orig % 1000000 / 1000 / 10,
 		    priv->spi->max_speed_hz / 1000000,
-		    priv->spi->max_speed_hz % 1000000 / 1000 / 100,
+		    priv->spi->max_speed_hz % 1000000 / 1000 / 10,
 		    effective_speed_hz / 1000000,
-		    effective_speed_hz % 1000000 / 1000 / 100);
+		    effective_speed_hz % 1000000 / 1000 / 10);
 
 	return 0;
 }
