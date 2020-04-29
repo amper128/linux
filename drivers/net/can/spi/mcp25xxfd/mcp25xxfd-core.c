@@ -157,6 +157,10 @@ static int mcp25xxfd_clks_and_vdd_enable(const struct mcp25xxfd_priv *priv)
 	if (err)
 		clk_disable_unprepare(priv->clk);
 
+	/* Wait for oscillator stabilisation time after power up */
+	usleep_range(MCP25XXFD_OSC_STAB_SLEEP_US,
+		     2 * MCP25XXFD_OSC_STAB_SLEEP_US);
+
 	return err;
 }
 
@@ -2524,10 +2528,6 @@ static int mcp25xxfd_register(struct mcp25xxfd_priv *priv)
 	pm_runtime_enable(ndev->dev.parent);
 
 	mcp25xxfd_register_quirks(priv);
-
-	/* Wait for oscillator startup timer after power up */
-	usleep_range(MCP25XXFD_OSC_STAB_SLEEP_US,
-		     2 * MCP25XXFD_OSC_STAB_SLEEP_US);
 
 	err = mcp25xxfd_chip_softreset(priv);
 	if (err)
