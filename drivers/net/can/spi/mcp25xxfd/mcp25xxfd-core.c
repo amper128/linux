@@ -82,7 +82,8 @@ static const char *__mcp25xxfd_get_model_str(enum mcp25xxfd_model model)
 	return "<unknown>";
 }
 
-static inline const char *mcp25xxfd_get_model_str(const struct mcp25xxfd_priv *priv)
+static inline const char *
+mcp25xxfd_get_model_str(const struct mcp25xxfd_priv *priv)
 {
 	return __mcp25xxfd_get_model_str(priv->devtype_data.model);
 }
@@ -2485,18 +2486,18 @@ static int mcp25xxfd_register_check_rx_int(struct mcp25xxfd_priv *priv)
 
 static int
 mcp25xxfd_register_get_dev_id(const struct mcp25xxfd_priv *priv,
-			     u32 *dev_id, u32 *effective_speed_hz)
+			      u32 *dev_id, u32 *effective_speed_hz)
 {
 	struct mcp25xxfd_map_buf *buf_rx;
 	struct mcp25xxfd_map_buf *buf_tx;
 	struct spi_transfer xfer[2] = { };
 	int err;
 
-	buf_rx = kzalloc(sizeof(* buf_rx), GFP_KERNEL);
+	buf_rx = kzalloc(sizeof(*buf_rx), GFP_KERNEL);
 	if (!buf_rx)
 		return -ENOMEM;
 
-	buf_tx = kzalloc(sizeof(* buf_tx), GFP_KERNEL);
+	buf_tx = kzalloc(sizeof(*buf_tx), GFP_KERNEL);
 	if (!buf_tx) {
 		err = -ENOMEM;
 		goto out_kfree_buf_rx;
