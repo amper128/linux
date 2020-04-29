@@ -427,7 +427,7 @@ mcp25xxfd_regmap_init_nocrc(struct mcp25xxfd_priv *priv)
 		return -ENOMEM;
 
 	if (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG))
-		priv->map = map;
+		priv->map_reg = map;
 
 	if (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX))
 		priv->map_rx = map;
@@ -462,7 +462,7 @@ mcp25xxfd_regmap_init_crc(struct mcp25xxfd_priv *priv)
 		return -ENOMEM;
 
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG)
-		priv->map = map;
+		priv->map_reg = map;
 
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX)
 		priv->map_rx = map;

@@ -651,7 +651,7 @@ struct mcp25xxfd_priv {
 	struct can_rx_offload offload;
 	struct net_device *ndev;
 
-	struct regmap *map;			/* register access */
+	struct regmap *map_reg;			/* register access */
 	struct regmap *map_rx;			/* RX/TEF RAM access */
 
 	struct mcp25xxfd_map_buf *map_buf_rx;

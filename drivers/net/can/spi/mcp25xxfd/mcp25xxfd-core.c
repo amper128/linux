@@ -203,7 +203,7 @@ mcp25xxfd_tef_tail_get_from_chip(const struct mcp25xxfd_priv *priv,
 	u32 tef_ua;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_TEFUA, &tef_ua);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TEFUA, &tef_ua);
 	if (err)
 		return err;
 
@@ -219,7 +219,8 @@ mcp25xxfd_tx_tail_get_from_chip(const struct mcp25xxfd_priv *priv,
 	u32 fifo_sta;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_FIFOSTA(MCP25XXFD_TX_FIFO),
+	err = regmap_read(priv->map_reg,
+			  MCP25XXFD_REG_FIFOSTA(MCP25XXFD_TX_FIFO),
 			  &fifo_sta);
 	if (err)
 		return err;
@@ -237,7 +238,7 @@ mcp25xxfd_rx_head_get_from_chip(const struct mcp25xxfd_priv *priv,
 	u32 fifo_sta;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_FIFOSTA(ring->fifo_nr),
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_FIFOSTA(ring->fifo_nr),
 			  &fifo_sta);
 	if (err)
 		return err;
@@ -255,7 +256,7 @@ mcp25xxfd_rx_tail_get_from_chip(const struct mcp25xxfd_priv *priv,
 	u32 fifo_ua;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_FIFOUA(ring->fifo_nr),
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_FIFOUA(ring->fifo_nr),
 			  &fifo_ua);
 	if (err)
 		return err;
@@ -427,7 +428,7 @@ mcp25xxfd_chip_get_mode(const struct mcp25xxfd_priv *priv, u8 *mode)
 	u32 val;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_CON, &val);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_CON, &val);
 	if (err)
 		return err;
 
@@ -444,7 +445,7 @@ __mcp25xxfd_chip_set_mode(const struct mcp25xxfd_priv *priv,
 	int err;
 
 	con_reqop = FIELD_PREP(MCP25XXFD_REG_CON_REQOP_MASK, mode_req);
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_CON,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_CON,
 				 MCP25XXFD_REG_CON_REQOP_MASK, con_reqop);
 	if (err)
 		return err;
@@ -452,7 +453,7 @@ __mcp25xxfd_chip_set_mode(const struct mcp25xxfd_priv *priv,
 	if (mode_req == MCP25XXFD_REG_CON_MODE_SLEEP || nowait)
 		return 0;
 
-	err = regmap_read_poll_timeout(priv->map, MCP25XXFD_REG_CON, con,
+	err = regmap_read_poll_timeout(priv->map_reg, MCP25XXFD_REG_CON, con,
 				       FIELD_GET(MCP25XXFD_REG_CON_OPMOD_MASK,
 						 con) == mode_req,
 				       MCP25XXFD_POLL_SLEEP_US,
@@ -508,12 +509,12 @@ static int mcp25xxfd_chip_clock_enable(const struct mcp25xxfd_priv *priv)
 	 * removes the "Oscillator Disable" bit and powers it up. All
 	 * other bits are unaffected.
 	 */
-	err = regmap_write(priv->map, MCP25XXFD_REG_OSC, osc);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_OSC, osc);
 	if (err)
 		return err;
 
 	/* Wait for "Oscillator Ready" bit */
-	err = regmap_read_poll_timeout(priv->map, MCP25XXFD_REG_OSC, osc,
+	err = regmap_read_poll_timeout(priv->map_reg, MCP25XXFD_REG_OSC, osc,
 				       (osc & osc_mask) == osc_reference,
 				       MCP25XXFD_OSC_STAB_SLEEP_US,
 				       MCP25XXFD_OSC_STAB_TIMEOUT_US);
@@ -576,7 +577,7 @@ static int mcp25xxfd_chip_softreset_check(const struct mcp25xxfd_priv *priv)
 			   MCP25XXFD_REG_OSC_CLKODIV_10);
 
 	/* check reset defaults of OSC reg */
-	err = regmap_read(priv->map, MCP25XXFD_REG_OSC, &osc);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_OSC, &osc);
 	if (err)
 		return err;
 
@@ -632,7 +633,7 @@ static int mcp25xxfd_chip_clock_init(const struct mcp25xxfd_priv *priv)
 	osc = MCP25XXFD_REG_OSC_LPMEN |
 		FIELD_PREP(MCP25XXFD_REG_OSC_CLKODIV_MASK,
 			   MCP25XXFD_REG_OSC_CLKODIV_10);
-	err = regmap_write(priv->map, MCP25XXFD_REG_OSC, osc);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_OSC, osc);
 	if (err)
 		return err;
 
@@ -641,7 +642,7 @@ static int mcp25xxfd_chip_clock_init(const struct mcp25xxfd_priv *priv)
 	 * This means an overflow of the 32 bit Time Base Counter
 	 * register at 40 MHz every 107 seconds.
 	 */
-	return regmap_write(priv->map, MCP25XXFD_REG_TSCON,
+	return regmap_write(priv->map_reg, MCP25XXFD_REG_TSCON,
 			    MCP25XXFD_REG_TSCON_TBCEN);
 }
 
@@ -682,7 +683,7 @@ static int mcp25xxfd_set_bittiming(const struct mcp25xxfd_priv *priv)
 	if (!(priv->can.ctrlmode & CAN_CTRLMODE_FD_NON_ISO))
 		val |= MCP25XXFD_REG_CON_ISOCRCEN;
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_CON, val);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_CON, val);
 	if (err)
 		return err;
 
@@ -694,7 +695,7 @@ static int mcp25xxfd_set_bittiming(const struct mcp25xxfd_priv *priv)
 			   bt->phase_seg2 - 1) |
 		FIELD_PREP(MCP25XXFD_REG_NBTCFG_SJW_MASK, bt->sjw - 1);
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_NBTCFG, val);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_NBTCFG, val);
 	if (err)
 		return err;
 
@@ -709,7 +710,7 @@ static int mcp25xxfd_set_bittiming(const struct mcp25xxfd_priv *priv)
 			   dbt->phase_seg2 - 1) |
 		FIELD_PREP(MCP25XXFD_REG_DBTCFG_SJW_MASK, dbt->sjw - 1);
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_DBTCFG, val);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_DBTCFG, val);
 	if (err)
 		return err;
 
@@ -720,7 +721,7 @@ static int mcp25xxfd_set_bittiming(const struct mcp25xxfd_priv *priv)
 			 MCP25XXFD_REG_TDC_TDCMOD_AUTO) |
 		FIELD_PREP(MCP25XXFD_REG_TDC_TDCO_MASK, tdco);
 
-	return regmap_write(priv->map, MCP25XXFD_REG_TDC, val);
+	return regmap_write(priv->map_reg, MCP25XXFD_REG_TDC, val);
 }
 
 static int mcp25xxfd_chip_rx_int_enable(const struct mcp25xxfd_priv *priv)
@@ -741,7 +742,7 @@ static int mcp25xxfd_chip_rx_int_enable(const struct mcp25xxfd_priv *priv)
 	 */
 	val = MCP25XXFD_REG_IOCON_PM0 | MCP25XXFD_REG_IOCON_TRIS1 |
 		MCP25XXFD_REG_IOCON_TRIS0;
-	return regmap_write(priv->map, MCP25XXFD_REG_IOCON, val);
+	return regmap_write(priv->map_reg, MCP25XXFD_REG_IOCON, val);
 }
 
 static int mcp25xxfd_chip_rx_int_disable(const struct mcp25xxfd_priv *priv)
@@ -757,7 +758,7 @@ static int mcp25xxfd_chip_rx_int_disable(const struct mcp25xxfd_priv *priv)
 	 */
 	val = MCP25XXFD_REG_IOCON_PM1 | MCP25XXFD_REG_IOCON_PM0 |
 		MCP25XXFD_REG_IOCON_TRIS1 | MCP25XXFD_REG_IOCON_TRIS0;
-	return regmap_write(priv->map, MCP25XXFD_REG_IOCON, val);
+	return regmap_write(priv->map_reg, MCP25XXFD_REG_IOCON, val);
 }
 
 static int
@@ -785,7 +786,7 @@ mcp25xxfd_chip_rx_fifo_init_one(const struct mcp25xxfd_priv *priv,
 		fifo_con |= FIELD_PREP(MCP25XXFD_REG_FIFOCON_PLSIZE_MASK,
 				       MCP25XXFD_REG_FIFOCON_PLSIZE_8);
 
-	return regmap_write(priv->map,
+	return regmap_write(priv->map_reg,
 			    MCP25XXFD_REG_FIFOCON(ring->fifo_nr), fifo_con);
 }
 
@@ -798,7 +799,7 @@ mcp25xxfd_chip_rx_filter_init_one(const struct mcp25xxfd_priv *priv,
 	fltcon = MCP25XXFD_REG_FLTCON_FLTEN(ring->nr) |
 		MCP25XXFD_REG_FLTCON_FBP(ring->nr, ring->fifo_nr);
 
-	return regmap_update_bits(priv->map,
+	return regmap_update_bits(priv->map_reg,
 				  MCP25XXFD_REG_FLTCON(ring->nr >> 2),
 				  MCP25XXFD_REG_FLTCON_FLT_MASK(ring->nr),
 				  fltcon);
@@ -818,7 +819,7 @@ static int mcp25xxfd_chip_fifo_init(const struct mcp25xxfd_priv *priv)
 		MCP25XXFD_REG_TEFCON_TEFOVIE |
 		MCP25XXFD_REG_TEFCON_TEFNEIE;
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_TEFCON, val);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_TEFCON, val);
 	if (err)
 		return err;
 
@@ -842,7 +843,8 @@ static int mcp25xxfd_chip_fifo_init(const struct mcp25xxfd_priv *priv)
 		val |= FIELD_PREP(MCP25XXFD_REG_FIFOCON_TXAT_MASK,
 				  MCP25XXFD_REG_FIFOCON_TXAT_UNLIMITED);
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO),
+	err = regmap_write(priv->map_reg,
+			   MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO),
 			   val);
 	if (err)
 		return err;
@@ -874,7 +876,7 @@ static int mcp25xxfd_chip_ecc_init(struct mcp25xxfd_priv *priv)
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_ECC)
 		val = MCP25XXFD_REG_ECCCON_ECCEN;
 
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_ECCCON,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_ECCCON,
 				 MCP25XXFD_REG_ECCCON_ECCEN, val);
 	if (err)
 		return err;
@@ -883,7 +885,7 @@ static int mcp25xxfd_chip_ecc_init(struct mcp25xxfd_priv *priv)
 	if (!ram)
 		return -ENOMEM;
 
-	err = regmap_raw_write(priv->map, MCP25XXFD_RAM_START, ram,
+	err = regmap_raw_write(priv->map_reg, MCP25XXFD_RAM_START, ram,
 			       MCP25XXFD_RAM_SIZE);
 	kfree(ram);
 
@@ -942,12 +944,12 @@ static int mcp25xxfd_chip_interrupts_enable(const struct mcp25xxfd_priv *priv)
 		return err;
 
 	val = MCP25XXFD_REG_CRC_FERRIE | MCP25XXFD_REG_CRC_CRCERRIE;
-	err = regmap_write(priv->map, MCP25XXFD_REG_CRC, val);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_CRC, val);
 	if (err)
 		return err;
 
 	val = MCP25XXFD_REG_ECCCON_DEDIE | MCP25XXFD_REG_ECCCON_SECIE;
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_ECCCON, val, val);
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_ECCCON, val, val);
 	if (err)
 		return err;
 
@@ -964,7 +966,7 @@ static int mcp25xxfd_chip_interrupts_enable(const struct mcp25xxfd_priv *priv)
 	if (priv->can.ctrlmode & CAN_CTRLMODE_BERR_REPORTING)
 		val |= MCP25XXFD_REG_INT_IVMIE;
 
-	return regmap_write(priv->map, MCP25XXFD_REG_INT, val);
+	return regmap_write(priv->map_reg, MCP25XXFD_REG_INT, val);
 }
 
 static int mcp25xxfd_chip_interrupts_disable(const struct mcp25xxfd_priv *priv)
@@ -972,16 +974,17 @@ static int mcp25xxfd_chip_interrupts_disable(const struct mcp25xxfd_priv *priv)
 	int err;
 	u32 mask;
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_INT, 0);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_INT, 0);
 	if (err)
 		return err;
 
 	mask = MCP25XXFD_REG_ECCCON_DEDIE | MCP25XXFD_REG_ECCCON_SECIE;
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_ECCCON, mask, 0x0);
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_ECCCON,
+				 mask, 0x0);
 	if (err)
 		return err;
 
-	err = regmap_write(priv->map, MCP25XXFD_REG_CRC, 0);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_CRC, 0);
 	if (err)
 		return err;
 
@@ -1088,7 +1091,7 @@ static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
 	if (!(ndev->flags & IFF_UP))
 		return 0;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_TREC, &trec);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TREC, &trec);
 	if (err)
 		return err;
 
@@ -1157,7 +1160,7 @@ mcp25xxfd_handle_tefif_recover(const struct mcp25xxfd_priv *priv, const u32 seq)
 	u32 tef_sta;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_TEFSTA, &tef_sta);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TEFSTA, &tef_sta);
 	if (err)
 		return err;
 
@@ -1210,7 +1213,7 @@ mcp25xxfd_handle_tefif_one(struct mcp25xxfd_priv *priv,
 	stats->tx_packets++;
 
 	/* finally increment the TEF pointer */
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_TEFCON,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_TEFCON,
 				 GENMASK(15, 8),
 				 MCP25XXFD_REG_TEFCON_UINC);
 	if (err)
@@ -1413,7 +1416,7 @@ mcp25xxfd_handle_rxif_one(struct mcp25xxfd_priv *priv,
 	ring->tail++;
 
 	/* finally increment the RX pointer */
-	return regmap_update_bits(priv->map,
+	return regmap_update_bits(priv->map_reg,
 				  MCP25XXFD_REG_FIFOCON(ring->fifo_nr),
 				  GENMASK(15, 8),
 				  MCP25XXFD_REG_FIFOCON_UINC);
@@ -1486,7 +1489,7 @@ static int mcp25xxfd_handle_rxif(struct mcp25xxfd_priv *priv)
 static inline int mcp25xxfd_get_timestamp(const struct mcp25xxfd_priv *priv,
 					  u32 *timestamp)
 {
-	return regmap_read(priv->map, MCP25XXFD_REG_TBC, timestamp);
+	return regmap_read(priv->map_reg, MCP25XXFD_REG_TBC, timestamp);
 }
 
 static struct sk_buff *
@@ -1514,7 +1517,7 @@ static int mcp25xxfd_handle_rxovif(struct mcp25xxfd_priv *priv)
 	stats->rx_over_errors++;
 	stats->rx_errors++;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_RXOVIF, &rxovif);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_RXOVIF, &rxovif);
 	if (err)
 		return err;
 
@@ -1533,7 +1536,7 @@ static int mcp25xxfd_handle_rxovif(struct mcp25xxfd_priv *priv)
 				    "RX-%d: FIFO overflow.\n", ring->nr);
 		}
 
-		err = regmap_update_bits(priv->map,
+		err = regmap_update_bits(priv->map_reg,
 					 MCP25XXFD_REG_FIFOSTA(ring->fifo_nr),
 					 MCP25XXFD_REG_FIFOSTA_RXOVIF,
 					 0x0);
@@ -1574,14 +1577,14 @@ static int mcp25xxfd_handle_ivmif(struct mcp25xxfd_priv *priv)
 	if (err)
 		return err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_BDIAG1, &bdiag1);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_BDIAG1, &bdiag1);
 	if (err)
 		return err;
 
 	/* Write 0s to clear error bits, don't write 1s to non active
 	 * bits, as they will be set.
 	 */
-	err = regmap_write(priv->map, MCP25XXFD_REG_BDIAG1, 0x0);
+	err = regmap_write(priv->map_reg, MCP25XXFD_REG_BDIAG1, 0x0);
 	if (err)
 		return err;
 
@@ -1673,7 +1676,7 @@ static int mcp25xxfd_handle_cerrif(struct mcp25xxfd_priv *priv)
 	 */
 	skb = mcp25xxfd_alloc_can_err_skb(priv, &cf, &timestamp);
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_TREC, &trec);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TREC, &trec);
 	if (err)
 		return err;
 
@@ -1922,11 +1925,11 @@ mcp25xxfd_handle_eccif(struct mcp25xxfd_priv *priv, bool set_normal_mode)
 	u8 nr;
 	int err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_ECCSTAT, &ecc_stat);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_ECCSTAT, &ecc_stat);
 	if (err)
 		return err;
 
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_ECCSTAT,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_ECCSTAT,
 				 MCP25XXFD_REG_ECCSTAT_IF_MASK, ~ecc_stat);
 	if (err)
 		return err;
@@ -1985,11 +1988,11 @@ static int mcp25xxfd_handle_spicrcif(struct mcp25xxfd_priv *priv)
 	int err;
 	u32 crc;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_CRC, &crc);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_CRC, &crc);
 	if (err)
 		return err;
 
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_CRC,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_CRC,
 				 MCP25XXFD_REG_CRC_IF_MASK,
 				 ~crc);
 	if (err)
@@ -2043,7 +2046,7 @@ static irqreturn_t mcp25xxfd_irq(int irq, void *dev_id)
 		u32 intf_pending, intf_pending_clearable;
 		bool set_normal_mode;
 
-		err = regmap_bulk_read(priv->map, MCP25XXFD_REG_INT,
+		err = regmap_bulk_read(priv->map_reg, MCP25XXFD_REG_INT,
 				       &priv->regs_status,
 				       sizeof(priv->regs_status) /
 				       sizeof(u32));
@@ -2069,7 +2072,8 @@ static irqreturn_t mcp25xxfd_irq(int irq, void *dev_id)
 		intf_pending_clearable = intf_pending &
 			MCP25XXFD_REG_INT_IF_CLEARABLE_MASK;
 		if (intf_pending_clearable) {
-			err = regmap_update_bits(priv->map, MCP25XXFD_REG_INT,
+			err = regmap_update_bits(priv->map_reg,
+						 MCP25XXFD_REG_INT,
 						 MCP25XXFD_REG_INT_IF_MASK,
 						 ~intf_pending_clearable);
 			if (err)
@@ -2423,13 +2427,13 @@ static int mcp25xxfd_register_chip_detect(struct mcp25xxfd_priv *priv)
 	/* The OSC_LPMEN is only supported on MCP2518FD, so use it to
 	 * autodetect the model.
 	 */
-	err = regmap_update_bits(priv->map, MCP25XXFD_REG_OSC,
+	err = regmap_update_bits(priv->map_reg, MCP25XXFD_REG_OSC,
 				 MCP25XXFD_REG_OSC_LPMEN,
 				 MCP25XXFD_REG_OSC_LPMEN);
 	if (err)
 		return err;
 
-	err = regmap_read(priv->map, MCP25XXFD_REG_OSC, &osc);
+	err = regmap_read(priv->map_reg, MCP25XXFD_REG_OSC, &osc);
 	if (err)
 		return err;
 
