@@ -654,8 +654,11 @@ struct mcp25xxfd_priv {
 	struct regmap *map_reg;			/* register access */
 	struct regmap *map_rx;			/* RX/TEF RAM access */
 
+	struct regmap *map_nocrc;
 	struct mcp25xxfd_map_buf_nocrc *map_buf_nocrc_rx;
 	struct mcp25xxfd_map_buf_nocrc *map_buf_nocrc_tx;
+
+	struct regmap *map_crc;
 	struct mcp25xxfd_map_buf_crc *map_buf_crc_rx;
 	struct mcp25xxfd_map_buf_crc *map_buf_crc_tx;
 

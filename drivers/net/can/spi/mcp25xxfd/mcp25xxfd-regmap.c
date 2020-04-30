@@ -408,83 +408,147 @@ static const struct regmap_bus mcp25xxfd_bus_crc = {
 	.max_raw_write = FIELD_SIZEOF(struct mcp25xxfd_map_buf_crc, data),
 };
 
+static inline bool
+mcp25xxfd_regmap_use_nocrc(struct mcp25xxfd_priv *priv)
+{
+	return (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG)) ||
+		(!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX));
+}
+
+static inline bool
+mcp25xxfd_regmap_use_crc(struct mcp25xxfd_priv *priv)
+{
+	return (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG) ||
+		(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX);
+}
+
 static int
 mcp25xxfd_regmap_init_nocrc(struct mcp25xxfd_priv *priv)
 {
-	struct regmap *map;
+	if (!priv->map_nocrc) {
+		struct regmap *map;
 
-	if ((priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG) &&
-	    (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX))
-		return 0;
+		map = devm_regmap_init(&priv->spi->dev, &mcp25xxfd_bus_nocrc,
+				       priv->spi, &mcp25xxfd_regmap_nocrc);
+		if (IS_ERR(map))
+			return PTR_ERR(map);
 
-	map = devm_regmap_init(&priv->spi->dev, &mcp25xxfd_bus,
-			       priv->spi, &mcp25xxfd_regmap);
-	if (IS_ERR(map))
-		return PTR_ERR(map);
+		priv->map_nocrc = map;
+	}
 
-	priv->map_buf_nocrc_rx = devm_kzalloc(&priv->spi->dev,
-					sizeof(*priv->map_buf_nocrc_rx),
-					GFP_KERNEL);
-	if (!priv->map_buf_nocrc_rx)
-		return -ENOMEM;
+	if (!priv->map_buf_nocrc_rx) {
+		priv->map_buf_nocrc_rx =
+			devm_kzalloc(&priv->spi->dev,
+				     sizeof(*priv->map_buf_nocrc_rx),
+				     GFP_KERNEL);
+		if (!priv->map_buf_nocrc_rx)
+			return -ENOMEM;
+	}
 
-	priv->map_buf_nocrc_tx = devm_kzalloc(&priv->spi->dev,
-					sizeof(*priv->map_buf_nocrc_tx),
-					GFP_KERNEL);
-	if (!priv->map_buf_nocrc_tx)
-		return -ENOMEM;
+	if (!priv->map_buf_nocrc_tx) {
+		priv->map_buf_nocrc_tx =
+			devm_kzalloc(&priv->spi->dev,
+				     sizeof(*priv->map_buf_nocrc_tx),
+				     GFP_KERNEL);
+		if (!priv->map_buf_nocrc_tx)
+			return -ENOMEM;
+	}
 
 	if (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG))
-		priv->map_reg = map;
+		priv->map_reg = priv->map_nocrc;
 
 	if (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX))
-		priv->map_rx = map;
+		priv->map_rx = priv->map_nocrc;
 
 	return 0;
+}
+
+static void mcp25xxfd_regmap_destroy_nocrc(struct mcp25xxfd_priv *priv)
+{
+	if (priv->map_buf_nocrc_rx) {
+		devm_kfree(&priv->spi->dev, priv->map_buf_nocrc_rx);
+		priv->map_buf_nocrc_rx = NULL;
+	}
+	if (priv->map_buf_nocrc_tx) {
+		devm_kfree(&priv->spi->dev, priv->map_buf_nocrc_tx);
+		priv->map_buf_nocrc_tx = NULL;
+	}
 }
 
 static int
 mcp25xxfd_regmap_init_crc(struct mcp25xxfd_priv *priv)
 {
-	struct regmap *map;
+	if (!priv->map_crc) {
+		struct regmap *map;
 
-	if (!((priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG) ||
-	      (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX)))
-		return 0;
+		map = devm_regmap_init(&priv->spi->dev, &mcp25xxfd_bus_crc,
+				       priv->spi, &mcp25xxfd_regmap_crc);
+		if (IS_ERR(map))
+			return PTR_ERR(map);
 
-	map = devm_regmap_init(&priv->spi->dev, &mcp25xxfd_bus_crc,
-			       priv->spi, &mcp25xxfd_regmap_crc);
-	if (IS_ERR(map))
-		return PTR_ERR(map);
+		priv->map_crc = map;
+	}
 
-	priv->map_buf_crc_rx = devm_kzalloc(&priv->spi->dev,
-					    sizeof(*priv->map_buf_crc_rx),
-					    GFP_KERNEL);
-	if (!priv->map_buf_crc_rx)
-		return -ENOMEM;
+	if (!priv->map_buf_crc_rx) {
+		priv->map_buf_crc_rx =
+			devm_kzalloc(&priv->spi->dev,
+				     sizeof(*priv->map_buf_crc_rx),
+				     GFP_KERNEL);
+		if (!priv->map_buf_crc_rx)
+			return -ENOMEM;
+	}
 
-	priv->map_buf_crc_tx = devm_kzalloc(&priv->spi->dev,
-					    sizeof(*priv->map_buf_crc_tx),
-					    GFP_KERNEL);
-	if (!priv->map_buf_crc_tx)
-		return -ENOMEM;
+	if (!priv->map_buf_crc_tx) {
+		priv->map_buf_crc_tx =
+			devm_kzalloc(&priv->spi->dev,
+				     sizeof(*priv->map_buf_crc_tx),
+				     GFP_KERNEL);
+		if (!priv->map_buf_crc_tx)
+			return -ENOMEM;
+	}
 
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG)
-		priv->map_reg = map;
+		priv->map_reg = priv->map_crc;
 
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_RX)
-		priv->map_rx = map;
+		priv->map_rx = priv->map_crc;
 
 	return 0;
+}
+
+static void mcp25xxfd_regmap_destroy_crc(struct mcp25xxfd_priv *priv)
+{
+	if (priv->map_buf_crc_rx) {
+		devm_kfree(&priv->spi->dev, priv->map_buf_crc_rx);
+		priv->map_buf_crc_rx = NULL;
+	}
+	if (priv->map_buf_crc_tx) {
+		devm_kfree(&priv->spi->dev, priv->map_buf_crc_tx);
+		priv->map_buf_crc_tx = NULL;
+	}
 }
 
 int mcp25xxfd_regmap_init(struct mcp25xxfd_priv *priv)
 {
 	int err;
 
-	err = mcp25xxfd_regmap_init_nocrc(priv);
-	if (err)
-		return err;
+	if (mcp25xxfd_regmap_use_nocrc(priv)) {
+		err = mcp25xxfd_regmap_init_nocrc(priv);
 
-	return mcp25xxfd_regmap_init_crc(priv);
+		if (err)
+			return err;
+	} else {
+		mcp25xxfd_regmap_destroy_nocrc(priv);
+	}
+
+	if (mcp25xxfd_regmap_use_crc(priv)) {
+		err = mcp25xxfd_regmap_init_crc(priv);
+
+		if (err)
+			return err;
+	} else {
+		mcp25xxfd_regmap_destroy_crc(priv);
+	}
+
+	return 0;
 }
