@@ -25,7 +25,7 @@ static int mcp25xxfd_regmap_gather_write(void *context,
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
-	struct mcp25xxfd_map_buf *buf_tx = priv->map_buf_tx;
+	struct mcp25xxfd_map_buf_nocrc *buf_tx = priv->map_buf_nocrc_tx;
 	struct spi_transfer xfer[] = {
 		{
 			.tx_buf = buf_tx,
@@ -72,8 +72,8 @@ static int mcp25xxfd_regmap_update_bits(void *context, unsigned int reg,
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
-	struct mcp25xxfd_map_buf *buf_rx = priv->map_buf_rx;
-	struct mcp25xxfd_map_buf *buf_tx = priv->map_buf_tx;
+	struct mcp25xxfd_map_buf_nocrc *buf_rx = priv->map_buf_nocrc_rx;
+	struct mcp25xxfd_map_buf_nocrc *buf_tx = priv->map_buf_nocrc_tx;
 	__le32 orig_le32 = 0, mask_le32, val_le32, tmp_le32;
 	u8 first_byte, last_byte, len;
 	int err;
@@ -138,8 +138,8 @@ static int mcp25xxfd_regmap_read(void *context,
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
-	struct mcp25xxfd_map_buf *buf_rx = priv->map_buf_rx;
-	struct mcp25xxfd_map_buf *buf_tx = priv->map_buf_tx;
+	struct mcp25xxfd_map_buf_nocrc *buf_rx = priv->map_buf_nocrc_rx;
+	struct mcp25xxfd_map_buf_nocrc *buf_tx = priv->map_buf_nocrc_tx;
 	struct spi_transfer xfer[2] = { };
 	struct spi_message msg;
 	int err;
@@ -378,8 +378,8 @@ static const struct regmap_bus mcp25xxfd_bus = {
 	.read = mcp25xxfd_regmap_read,
 	.reg_format_endian_default = REGMAP_ENDIAN_BIG,
 	.val_format_endian_default = REGMAP_ENDIAN_LITTLE,
-	.max_raw_read = FIELD_SIZEOF(struct mcp25xxfd_map_buf, data),
-	.max_raw_write = FIELD_SIZEOF(struct mcp25xxfd_map_buf, data),
+	.max_raw_read = FIELD_SIZEOF(struct mcp25xxfd_map_buf_nocrc, data),
+	.max_raw_write = FIELD_SIZEOF(struct mcp25xxfd_map_buf_nocrc, data),
 };
 
 static const struct regmap_config mcp25xxfd_regmap_crc = {
@@ -418,16 +418,16 @@ mcp25xxfd_regmap_init_nocrc(struct mcp25xxfd_priv *priv)
 	if (IS_ERR(map))
 		return PTR_ERR(map);
 
-	priv->map_buf_rx = devm_kzalloc(&priv->spi->dev,
-					sizeof(*priv->map_buf_rx),
+	priv->map_buf_nocrc_rx = devm_kzalloc(&priv->spi->dev,
+					sizeof(*priv->map_buf_nocrc_rx),
 					GFP_KERNEL);
-	if (!priv->map_buf_rx)
+	if (!priv->map_buf_nocrc_rx)
 		return -ENOMEM;
 
-	priv->map_buf_tx = devm_kzalloc(&priv->spi->dev,
-					sizeof(*priv->map_buf_tx),
+	priv->map_buf_nocrc_tx = devm_kzalloc(&priv->spi->dev,
+					sizeof(*priv->map_buf_nocrc_tx),
 					GFP_KERNEL);
-	if (!priv->map_buf_tx)
+	if (!priv->map_buf_nocrc_tx)
 		return -ENOMEM;
 
 	if (!(priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG))

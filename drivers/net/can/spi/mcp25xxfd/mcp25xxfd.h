@@ -615,7 +615,7 @@ struct mcp25xxfd_rx_ring {
 	struct mcp25xxfd_hw_rx_obj_canfd obj[];
 };
 
-struct __packed mcp25xxfd_map_buf {
+struct __packed mcp25xxfd_map_buf_nocrc {
 	struct mcp25xxfd_buf_cmd cmd;
 	u8 data[256];
 } ____cacheline_aligned;
@@ -654,8 +654,8 @@ struct mcp25xxfd_priv {
 	struct regmap *map_reg;			/* register access */
 	struct regmap *map_rx;			/* RX/TEF RAM access */
 
-	struct mcp25xxfd_map_buf *map_buf_rx;
-	struct mcp25xxfd_map_buf *map_buf_tx;
+	struct mcp25xxfd_map_buf_nocrc *map_buf_nocrc_rx;
+	struct mcp25xxfd_map_buf_nocrc *map_buf_nocrc_tx;
 	struct mcp25xxfd_map_buf_crc *map_buf_crc_rx;
 	struct mcp25xxfd_map_buf_crc *map_buf_crc_tx;
 

@@ -2492,8 +2492,8 @@ static int
 mcp25xxfd_register_get_dev_id(const struct mcp25xxfd_priv *priv,
 			      u32 *dev_id, u32 *effective_speed_hz)
 {
-	struct mcp25xxfd_map_buf *buf_rx;
-	struct mcp25xxfd_map_buf *buf_tx;
+	struct mcp25xxfd_map_buf_nocrc *buf_rx;
+	struct mcp25xxfd_map_buf_nocrc *buf_tx;
 	struct spi_transfer xfer[2] = { };
 	int err;
 
