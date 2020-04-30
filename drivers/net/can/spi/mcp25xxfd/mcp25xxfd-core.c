@@ -40,7 +40,10 @@ static const struct mcp25xxfd_devtype_data mcp25xxfd_devtype_data_mcp2518fd = {
 	.model = MCP25XXFD_MODEL_MCP2518FD,
 };
 
+/* Autodetect model, start with CRC enabled. */
 static const struct mcp25xxfd_devtype_data mcp25xxfd_devtype_data_mcp25xxfd = {
+	.quirks = MCP25XXFD_QUIRK_CRC_REG | MCP25XXFD_QUIRK_CRC_RX |
+		MCP25XXFD_QUIRK_CRC_TX | MCP25XXFD_QUIRK_ECC,
 	.model = MCP25XXFD_MODEL_MCP25XXFD,
 };
 
