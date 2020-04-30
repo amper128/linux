@@ -356,6 +356,7 @@ static const struct regmap_access_table mcp25xxfd_reg_table = {
 };
 
 static const struct regmap_config mcp25xxfd_regmap = {
+	.name = "nocrc",
 	.reg_bits = 16,
 	.reg_stride = 4,
 	.pad_bits = 0,
