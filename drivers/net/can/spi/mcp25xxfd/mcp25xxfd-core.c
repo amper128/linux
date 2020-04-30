@@ -2454,7 +2454,8 @@ static int mcp25xxfd_register_chip_detect(struct mcp25xxfd_priv *priv)
 	/* We need to preserve the Half Duplex Quirk. */
 	mcp25xxfd_register_quirks(priv);
 
-	return 0;
+	/* Re-init regmap with quirks of detected model. */
+	return mcp25xxfd_regmap_init(priv);
 }
 
 static int mcp25xxfd_register_check_rx_int(struct mcp25xxfd_priv *priv)
