@@ -181,9 +181,10 @@ static int mcp25xxfd_regmap_read(void *context,
 	return 0;
 }
 
-static int mcp25xxfd_regmap_crc_gather_write(void *context,
-					     const void *reg_p, size_t reg_len,
-					     const void *val, size_t val_len)
+static int
+mcp25xxfd_regmap_crc_gather_write(void *context,
+				  const void *reg_p, size_t reg_len,
+				  const void *val, size_t val_len)
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
@@ -214,8 +215,9 @@ static int mcp25xxfd_regmap_crc_gather_write(void *context,
 	return spi_sync_transfer(spi, xfer, ARRAY_SIZE(xfer));
 }
 
-static int mcp25xxfd_regmap_crc_write(void *context,
-				      const void *data, size_t count)
+static int
+mcp25xxfd_regmap_crc_write(void *context,
+			   const void *data, size_t count)
 {
 	const size_t data_offset = sizeof(__be16) +
 		mcp25xxfd_regmap_crc.pad_bits / BITS_PER_BYTE;
@@ -253,9 +255,10 @@ mcp25xxfd_regmap_crc_read_one(struct mcp25xxfd_priv *priv,
 	return 0;
 }
 
-static int mcp25xxfd_regmap_crc_read(void *context,
-				     const void *reg_p, size_t reg_len,
-				     void *val_buf, size_t val_len)
+static int
+mcp25xxfd_regmap_crc_read(void *context,
+			  const void *reg_p, size_t reg_len,
+			  void *val_buf, size_t val_len)
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
