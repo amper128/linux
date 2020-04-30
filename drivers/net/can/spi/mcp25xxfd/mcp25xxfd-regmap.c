@@ -12,16 +12,18 @@
 
 static const struct regmap_config mcp25xxfd_regmap_crc;
 
-static int mcp25xxfd_regmap_write(void *context, const void *data, size_t count)
+static int
+mcp25xxfd_regmap_nocrc_write(void *context, const void *data, size_t count)
 {
 	struct spi_device *spi = context;
 
 	return spi_write(spi, data, count);
 }
 
-static int mcp25xxfd_regmap_gather_write(void *context,
-					 const void *reg, size_t reg_len,
-					 const void *val, size_t val_len)
+static int
+mcp25xxfd_regmap_nocrc_gather_write(void *context,
+				    const void *reg, size_t reg_len,
+				    const void *val, size_t val_len)
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
@@ -67,8 +69,9 @@ static inline bool mcp25xxfd_update_bits_read_reg(unsigned int reg)
 	return true;
 }
 
-static int mcp25xxfd_regmap_update_bits(void *context, unsigned int reg,
-					unsigned int mask, unsigned int val)
+static int
+mcp25xxfd_regmap_nocrc_update_bits(void *context, unsigned int reg,
+				   unsigned int mask, unsigned int val)
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
@@ -132,9 +135,10 @@ static int mcp25xxfd_regmap_update_bits(void *context, unsigned int reg,
 	return spi_write(spi, buf_tx, sizeof(buf_tx->cmd) + len);
 }
 
-static int mcp25xxfd_regmap_read(void *context,
-				 const void *reg, size_t reg_len,
-				 void *val_buf, size_t val_len)
+static int
+mcp25xxfd_regmap_nocrc_read(void *context,
+			    const void *reg, size_t reg_len,
+			    void *val_buf, size_t val_len)
 {
 	struct spi_device *spi = context;
 	struct mcp25xxfd_priv *priv = spi_get_drvdata(spi);
@@ -355,7 +359,7 @@ static const struct regmap_access_table mcp25xxfd_reg_table = {
 	.n_yes_ranges = ARRAY_SIZE(mcp25xxfd_reg_table_yes_range),
 };
 
-static const struct regmap_config mcp25xxfd_regmap = {
+static const struct regmap_config mcp25xxfd_regmap_nocrc = {
 	.name = "nocrc",
 	.reg_bits = 16,
 	.reg_stride = 4,
@@ -371,11 +375,11 @@ static const struct regmap_config mcp25xxfd_regmap = {
 		cpu_to_be16(MCP25XXFD_SPI_INSTRUCTION_WRITE),
 };
 
-static const struct regmap_bus mcp25xxfd_bus = {
-	.write = mcp25xxfd_regmap_write,
-	.gather_write = mcp25xxfd_regmap_gather_write,
-	.reg_update_bits = mcp25xxfd_regmap_update_bits,
-	.read = mcp25xxfd_regmap_read,
+static const struct regmap_bus mcp25xxfd_bus_nocrc = {
+	.write = mcp25xxfd_regmap_nocrc_write,
+	.gather_write = mcp25xxfd_regmap_nocrc_gather_write,
+	.reg_update_bits = mcp25xxfd_regmap_nocrc_update_bits,
+	.read = mcp25xxfd_regmap_nocrc_read,
 	.reg_format_endian_default = REGMAP_ENDIAN_BIG,
 	.val_format_endian_default = REGMAP_ENDIAN_LITTLE,
 	.max_raw_read = FIELD_SIZEOF(struct mcp25xxfd_map_buf_nocrc, data),
