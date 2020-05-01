@@ -572,9 +572,16 @@ union mcp25xxfd_tx_obj_load_buf {
 	} crc;
 } ____cacheline_aligned;
 
-struct __packed mcp25xxfd_write_reg_buf {
-	struct mcp25xxfd_buf_cmd cmd;
-	u8 data[4];
+union mcp25xxfd_write_reg_buf {
+	struct __packed {
+		struct mcp25xxfd_buf_cmd cmd;
+		u8 data[4];
+	} nocrc;
+	struct __packed {
+		struct mcp25xxfd_buf_cmd_crc cmd;
+		u8 data[4];
+		__be16 crc;
+	} crc;
 } ____cacheline_aligned;
 
 struct mcp25xxfd_tx_obj {
@@ -587,7 +594,7 @@ struct mcp25xxfd_tx_obj {
 
 	struct {
 		struct spi_transfer xfer;
-		struct mcp25xxfd_write_reg_buf buf;
+		union mcp25xxfd_write_reg_buf buf;
 	} trigger;
 };
 
@@ -757,6 +764,12 @@ mcp25xxfd_spi_cmd_crc_set_len_in_ram(struct mcp25xxfd_buf_cmd_crc *cmd, u16 len)
 }
 
 static inline void
+mcp25xxfd_spi_cmd_crc_set_len_in_reg(struct mcp25xxfd_buf_cmd_crc *cmd, u16 len)
+{
+	__mcp25xxfd_spi_cmd_crc_set_len(cmd, len, false);
+}
+
+static inline void
 mcp25xxfd_spi_cmd_read_crc_set_addr(struct mcp25xxfd_buf_cmd_crc *cmd, u16 addr)
 {
 	cmd->cmd = cpu_to_be16(MCP25XXFD_SPI_INSTRUCTION_READ_CRC | addr);
@@ -783,6 +796,26 @@ mcp25xxfd_spi_cmd_write_crc(struct mcp25xxfd_buf_cmd_crc *cmd,
 {
 	mcp25xxfd_spi_cmd_write_crc_set_addr(cmd, addr);
 	__mcp25xxfd_spi_cmd_crc_set_len(cmd, len, mcp25xxfd_reg_in_ram(addr));
+}
+
+static inline u8 *
+mcp25xxfd_spi_cmd_write(const struct mcp25xxfd_priv *priv,
+			union mcp25xxfd_write_reg_buf *write_reg_buf,
+			u16 addr)
+{
+	u8 *data;
+
+	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG) {
+		mcp25xxfd_spi_cmd_write_crc_set_addr(&write_reg_buf->crc.cmd,
+						     addr);
+		data = write_reg_buf->crc.data;
+	} else {
+		mcp25xxfd_spi_cmd_write_nocrc(&write_reg_buf->nocrc.cmd,
+					      addr);
+		data = write_reg_buf->nocrc.data;
+	}
+
+	return data;
 }
 
 static inline u16 mcp25xxfd_get_tef_obj_addr(u8 n)

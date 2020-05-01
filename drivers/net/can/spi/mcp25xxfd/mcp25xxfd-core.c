@@ -182,21 +182,39 @@ static int mcp25xxfd_clks_and_vdd_disable(const struct mcp25xxfd_priv *priv)
 }
 
 static inline int
-mcp25xxfd_cmd_prepare_write_reg(struct mcp25xxfd_write_reg_buf *write_reg_buf,
+mcp25xxfd_cmd_prepare_write_reg(const struct mcp25xxfd_priv *priv,
+				union mcp25xxfd_write_reg_buf *write_reg_buf,
 				const u16 reg, const u32 mask, const u32 val)
 {
 	u8 first_byte, last_byte, len;
+	u8 *data;
 	__le32 val_le32;
 
 	first_byte = mcp25xxfd_first_byte_set(mask);
 	last_byte = mcp25xxfd_last_byte_set(mask);
 	len = last_byte - first_byte + 1;
 
-	mcp25xxfd_spi_cmd_write_nocrc(&write_reg_buf->cmd, reg + first_byte);
+	data = mcp25xxfd_spi_cmd_write(priv, write_reg_buf, reg + first_byte);
 	val_le32 = cpu_to_le32(val >> BITS_PER_BYTE * first_byte);
-	memcpy(write_reg_buf->data, &val_le32, len);
+	memcpy(data, &val_le32, len);
 
-	return sizeof(write_reg_buf->cmd) + len;
+	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_REG) {
+		u16 crc;
+
+		mcp25xxfd_spi_cmd_crc_set_len_in_reg(&write_reg_buf->crc.cmd,
+						     len);
+		/* CRC */
+		len += sizeof(write_reg_buf->crc.cmd);
+		crc = mcp25xxfd_crc16_compute(&write_reg_buf->crc, len);
+		put_unaligned_be16(crc, (void *)write_reg_buf + len);
+
+		/* Total length */
+		len += sizeof(write_reg_buf->crc.crc);
+	} else {
+		len += sizeof(write_reg_buf->nocrc.cmd);
+	}
+
+	return len;
 }
 
 static inline int
@@ -306,8 +324,8 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	/* FIFO trigger */
 	addr = MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO);
 	val = MCP25XXFD_REG_FIFOCON_TXREQ | MCP25XXFD_REG_FIFOCON_UINC;
-	len = mcp25xxfd_cmd_prepare_write_reg(&tx_obj->trigger.buf, addr,
-					      val, val);
+	len = mcp25xxfd_cmd_prepare_write_reg(priv, &tx_obj->trigger.buf,
+					      addr, val, val);
 	xfer = &tx_obj->trigger.xfer;
 	xfer->tx_buf = &tx_obj->trigger.buf;
 	xfer->len = len;
