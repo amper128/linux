@@ -1960,12 +1960,12 @@ mcp25xxfd_handle_eccif(struct mcp25xxfd_priv *priv, bool set_normal_mode)
 	/* Check if ECC error occurred in TX-RAM */
 	addr = FIELD_GET(MCP25XXFD_REG_ECCSTAT_ERRADDR_MASK, ecc_stat);
 	err = mcp25xxfd_get_tx_nr_by_addr(priv->tx, &nr, addr);
-	if (err == -ENOENT)
-		in_tx_ram = false;
-	else if (err)
-		return err;
-	else
+	if (!err)
 		in_tx_ram = true;
+	else if (err == -ENOENT)
+		in_tx_ram = false;
+	else
+		return err;
 
 	if (ecc_stat & MCP25XXFD_REG_ECCSTAT_SECIF)
 		msg = "Single ECC Error corrected at address";
