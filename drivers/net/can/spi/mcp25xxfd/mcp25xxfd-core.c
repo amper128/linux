@@ -2269,9 +2269,8 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 		/* CRC */
 		len += sizeof(tx_obj->load.buf.crc.cmd);
 		crc = mcp25xxfd_crc16_compute(&load_buf->crc, len);
-		put_unaligned_be16(crc,
-				   &hw_tx_obj->data[round_up(cfd->len,
-							     sizeof(u32))]);
+		put_unaligned_be16(crc, (void *)load_buf + len);
+
 		/* Total length */
 		len += sizeof(load_buf->crc.crc);
 	} else {
