@@ -2180,6 +2180,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 {
 	const struct canfd_frame *cfd = (struct canfd_frame *)skb->data;
 	struct mcp25xxfd_hw_tx_obj_raw *hw_tx_obj;
+	union mcp25xxfd_tx_obj_load_buf *load_buf;
 	u8 dlc;
 	u32 id, flags;
 	int offset, len;
@@ -2221,10 +2222,11 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 			flags |= MCP25XXFD_OBJ_FLAGS_BRS;
 	}
 
+	load_buf = &tx_obj->load.buf;
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_TX)
-		hw_tx_obj = &tx_obj->load.buf.crc.hw_tx_obj;
+		hw_tx_obj = &load_buf->crc.hw_tx_obj;
 	else
-		hw_tx_obj = &tx_obj->load.buf.nocrc.hw_tx_obj;
+		hw_tx_obj = &load_buf->nocrc.hw_tx_obj;
 
 	put_unaligned_le32(id, &hw_tx_obj->id);
 	put_unaligned_le32(flags, &hw_tx_obj->flags);
@@ -2244,18 +2246,18 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_TX) {
 		u16 crc;
 
-		mcp25xxfd_spi_cmd_crc_set_len_in_ram(&tx_obj->load.buf.crc.cmd,
+		mcp25xxfd_spi_cmd_crc_set_len_in_ram(&load_buf->crc.cmd,
 						     len);
 		/* CRC */
 		len += sizeof(tx_obj->load.buf.crc.cmd);
-		crc = mcp25xxfd_crc16_compute(&tx_obj->load.buf.crc, len);
+		crc = mcp25xxfd_crc16_compute(&load_buf->crc, len);
 		put_unaligned_be16(crc,
 				   &hw_tx_obj->data[round_up(cfd->len,
 							     sizeof(u32))]);
 		/* Total length */
-		len += sizeof(tx_obj->load.buf.crc.crc);
+		len += sizeof(load_buf->crc.crc);
 	} else {
-		len += sizeof(tx_obj->load.buf.nocrc.cmd);
+		len += sizeof(load_buf->nocrc.cmd);
 	}
 
 	tx_obj->load.xfer.len = len;
