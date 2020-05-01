@@ -115,7 +115,7 @@ mcp25xxfd_regmap_nocrc_update_bits(void *context, unsigned int reg,
 				memset(buf_tx->data, 0x0, len);
 		}
 
-		mcp25xxfd_spi_cmd_read(&buf_tx->cmd, reg + first_byte);
+		mcp25xxfd_spi_cmd_read_nocrc(&buf_tx->cmd, reg + first_byte);
 		err = spi_sync(spi, &msg);
 		if (err)
 			return err;

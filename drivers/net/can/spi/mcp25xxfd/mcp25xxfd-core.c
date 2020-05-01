@@ -2510,7 +2510,7 @@ mcp25xxfd_register_get_dev_id(const struct mcp25xxfd_priv *priv,
 	xfer[1].rx_buf = buf_rx->data;
 	xfer[1].len = sizeof(dev_id);
 
-	mcp25xxfd_spi_cmd_read(&buf_tx->cmd, MCP25XXFD_REG_DEVID);
+	mcp25xxfd_spi_cmd_read_nocrc(&buf_tx->cmd, MCP25XXFD_REG_DEVID);
 	err = spi_sync_transfer(priv->spi, xfer, ARRAY_SIZE(xfer));
 	if (err)
 		goto out_kfree_buf_tx;
