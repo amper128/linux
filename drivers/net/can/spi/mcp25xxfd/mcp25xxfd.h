@@ -578,14 +578,14 @@ struct __packed mcp25xxfd_write_reg_buf {
 } ____cacheline_aligned;
 
 struct mcp25xxfd_tx_obj {
+	struct spi_message msg;
+
 	struct {
-		struct spi_message msg;
 		struct spi_transfer xfer;
 		union mcp25xxfd_tx_obj_load_buf buf;
 	} load;
 
 	struct {
-		struct spi_message msg;
 		struct spi_transfer xfer;
 		struct mcp25xxfd_write_reg_buf buf;
 	} trigger;

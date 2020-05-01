@@ -281,6 +281,10 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	u16 addr;
 	u8 len;
 
+	/* SPI message */
+	msg = &tx_obj->msg;
+	spi_message_init(msg);
+
 	/* FIFO load */
 	addr = mcp25xxfd_get_tx_obj_addr(ring, n);
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_TX)
@@ -292,9 +296,11 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	xfer = &tx_obj->load.xfer;
 	xfer->tx_buf = &tx_obj->load.buf;
 	xfer->len = 0; /* actual len is assigned on the fly */
+	xfer->cs_change = 1;
+	xfer->cs_change_delay = 0;
+	xfer->cs_change_delay_unit = SPI_DELAY_UNIT_NSECS;
 
-	msg = &tx_obj->load.msg;
-	spi_message_init_with_transfers(msg, xfer, 1);
+	spi_message_add_tail(xfer, msg);
 
 	/* FIFO trigger */
 	addr = MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO);
@@ -305,8 +311,7 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	xfer->tx_buf = &tx_obj->trigger.buf;
 	xfer->len = len;
 
-	msg = &tx_obj->trigger.msg;
-	spi_message_init_with_transfers(msg, xfer, 1);
+	spi_message_add_tail(xfer, msg);
 }
 
 static void mcp25xxfd_ring_init(struct mcp25xxfd_priv *priv)
@@ -1904,14 +1909,9 @@ mcp25xxfd_handle_eccif_recover(struct mcp25xxfd_priv *priv, u8 nr)
 
 	/* reload tx_obj into controller RAM ... */
 	tx_obj = &tx_ring->obj[nr];
-	err = spi_sync(priv->spi, &tx_obj->load.msg);
+	err = spi_sync_transfer(priv->spi, &tx_obj->load.xfer, 1);
 	if (err)
 		return err;
-
-	/* spi_sync() leaves msg->complete set, unset to avoid bogus
-	 * execution resulting in an Oops.
-	 */
-	tx_obj->load.msg.complete = NULL;
 
 	/* ... and trigger retransmit */
 	return mcp25xxfd_chip_set_normal_mode(priv);
@@ -2263,13 +2263,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 static int mcp25xxfd_tx_obj_write(const struct mcp25xxfd_priv *priv,
 				  struct mcp25xxfd_tx_obj *tx_obj)
 {
-	int err;
-
-	err = spi_async(priv->spi, &tx_obj->load.msg);
-	if (err)
-		return err;
-
-	return spi_async(priv->spi, &tx_obj->trigger.msg);
+	return spi_async(priv->spi, &tx_obj->msg);
 }
 
 static netdev_tx_t mcp25xxfd_start_xmit(struct sk_buff *skb,
