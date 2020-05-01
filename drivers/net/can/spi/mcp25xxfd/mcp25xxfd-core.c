@@ -192,7 +192,7 @@ mcp25xxfd_cmd_prepare_write_reg(struct mcp25xxfd_write_reg_buf *write_reg_buf,
 	last_byte = mcp25xxfd_last_byte_set(mask);
 	len = last_byte - first_byte + 1;
 
-	mcp25xxfd_spi_cmd_write(&write_reg_buf->cmd, reg + first_byte);
+	mcp25xxfd_spi_cmd_write_nocrc(&write_reg_buf->cmd, reg + first_byte);
 	val_le32 = cpu_to_le32(val >> BITS_PER_BYTE * first_byte);
 	memcpy(write_reg_buf->data, &val_le32, len);
 
@@ -291,7 +291,8 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 		mcp25xxfd_spi_cmd_write_crc_set_addr(&tx_obj->load.buf.crc.cmd,
 						     addr);
 	else
-		mcp25xxfd_spi_cmd_write(&tx_obj->load.buf.nocrc.cmd, addr);
+		mcp25xxfd_spi_cmd_write_nocrc(&tx_obj->load.buf.nocrc.cmd,
+					      addr);
 
 	xfer = &tx_obj->load.xfer;
 	xfer->tx_buf = &tx_obj->load.buf;

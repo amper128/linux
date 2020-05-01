@@ -129,7 +129,7 @@ mcp25xxfd_regmap_nocrc_update_bits(void *context, unsigned int reg,
 	tmp_le32 = orig_le32 & ~mask_le32;
 	tmp_le32 |= val_le32 & mask_le32;
 
-	mcp25xxfd_spi_cmd_write(&buf_tx->cmd, reg + first_byte);
+	mcp25xxfd_spi_cmd_write_nocrc(&buf_tx->cmd, reg + first_byte);
 	memcpy(buf_tx->data, &tmp_le32, len);
 
 	return spi_write(spi, buf_tx, sizeof(buf_tx->cmd) + len);

@@ -725,7 +725,7 @@ mcp25xxfd_spi_cmd_read_nocrc(struct mcp25xxfd_buf_cmd *cmd, u16 addr)
 }
 
 static inline void
-mcp25xxfd_spi_cmd_write(struct mcp25xxfd_buf_cmd *cmd, u16 addr)
+mcp25xxfd_spi_cmd_write_nocrc(struct mcp25xxfd_buf_cmd *cmd, u16 addr)
 {
 	cmd->cmd = cpu_to_be16(MCP25XXFD_SPI_INSTRUCTION_WRITE | addr);
 }
