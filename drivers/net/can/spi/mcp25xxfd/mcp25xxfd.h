@@ -586,16 +586,8 @@ union mcp25xxfd_write_reg_buf {
 
 struct mcp25xxfd_tx_obj {
 	struct spi_message msg;
-
-	struct {
-		struct spi_transfer xfer;
-		union mcp25xxfd_tx_obj_load_buf buf;
-	} load;
-
-	struct {
-		struct spi_transfer xfer;
-		union mcp25xxfd_write_reg_buf buf;
-	} trigger;
+	struct spi_transfer xfer[2];
+	union mcp25xxfd_tx_obj_load_buf buf;
 };
 
 struct mcp25xxfd_tx_ring {
@@ -607,6 +599,7 @@ struct mcp25xxfd_tx_ring {
 	u8 obj_size;
 
 	struct mcp25xxfd_tx_obj obj[MCP25XXFD_TX_OBJ_NUM_MAX];
+	union mcp25xxfd_write_reg_buf trigger_buf;
 };
 
 struct mcp25xxfd_rx_ring {

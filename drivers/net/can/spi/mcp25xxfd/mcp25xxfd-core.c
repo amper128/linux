@@ -181,7 +181,7 @@ static int mcp25xxfd_clks_and_vdd_disable(const struct mcp25xxfd_priv *priv)
 	return 0;
 }
 
-static inline int
+static inline u8
 mcp25xxfd_cmd_prepare_write_reg(const struct mcp25xxfd_priv *priv,
 				union mcp25xxfd_write_reg_buf *write_reg_buf,
 				const u16 reg, const u32 mask, const u32 val)
@@ -291,46 +291,37 @@ mcp25xxfd_rx_tail_get_from_chip(const struct mcp25xxfd_priv *priv,
 static void
 mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 			      const struct mcp25xxfd_tx_ring *ring,
-			      struct mcp25xxfd_tx_obj *tx_obj, const u8 n)
+			      struct mcp25xxfd_tx_obj *tx_obj,
+			      const u8 trigger_buf_len,
+			      const u8 n)
 {
-	struct spi_message *msg;
 	struct spi_transfer *xfer;
-	u32 val;
 	u16 addr;
-	u8 len;
-
-	/* SPI message */
-	msg = &tx_obj->msg;
-	spi_message_init(msg);
 
 	/* FIFO load */
 	addr = mcp25xxfd_get_tx_obj_addr(ring, n);
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_TX)
-		mcp25xxfd_spi_cmd_write_crc_set_addr(&tx_obj->load.buf.crc.cmd,
+		mcp25xxfd_spi_cmd_write_crc_set_addr(&tx_obj->buf.crc.cmd,
 						     addr);
 	else
-		mcp25xxfd_spi_cmd_write_nocrc(&tx_obj->load.buf.nocrc.cmd,
+		mcp25xxfd_spi_cmd_write_nocrc(&tx_obj->buf.nocrc.cmd,
 					      addr);
 
-	xfer = &tx_obj->load.xfer;
-	xfer->tx_buf = &tx_obj->load.buf;
-	xfer->len = 0; /* actual len is assigned on the fly */
+	xfer = &tx_obj->xfer[0];
+	xfer->tx_buf = &tx_obj->buf;
+	xfer->len = 0;	/* actual len is assigned on the fly */
 	xfer->cs_change = 1;
 	xfer->cs_change_delay = 0;
 	xfer->cs_change_delay_unit = SPI_DELAY_UNIT_NSECS;
 
-	spi_message_add_tail(xfer, msg);
-
 	/* FIFO trigger */
-	addr = MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO);
-	val = MCP25XXFD_REG_FIFOCON_TXREQ | MCP25XXFD_REG_FIFOCON_UINC;
-	len = mcp25xxfd_cmd_prepare_write_reg(priv, &tx_obj->trigger.buf,
-					      addr, val, val);
-	xfer = &tx_obj->trigger.xfer;
-	xfer->tx_buf = &tx_obj->trigger.buf;
-	xfer->len = len;
+	xfer = &tx_obj->xfer[1];
+	xfer->tx_buf = &ring->trigger_buf;
+	xfer->len = trigger_buf_len;
 
-	spi_message_add_tail(xfer, msg);
+	/* SPI message */
+	spi_message_init_with_transfers(&tx_obj->msg, tx_obj->xfer,
+					ARRAY_SIZE(tx_obj->xfer));
 }
 
 static void mcp25xxfd_ring_init(struct mcp25xxfd_priv *priv)
@@ -338,6 +329,9 @@ static void mcp25xxfd_ring_init(struct mcp25xxfd_priv *priv)
 	struct mcp25xxfd_tx_ring *tx_ring;
 	struct mcp25xxfd_rx_ring *rx_ring, *prev_rx_ring = NULL;
 	struct mcp25xxfd_tx_obj *tx_obj;
+	u32 val;
+	u16 addr;
+	u8 len;
 	int i;
 
 	/* TEF */
@@ -349,8 +343,15 @@ static void mcp25xxfd_ring_init(struct mcp25xxfd_priv *priv)
 	tx_ring->head = 0;
 	tx_ring->tail = 0;
 	tx_ring->base = mcp25xxfd_get_tef_obj_addr(tx_ring->obj_num);
+
+	/* FIFO trigger */
+	addr = MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO);
+	val = MCP25XXFD_REG_FIFOCON_TXREQ | MCP25XXFD_REG_FIFOCON_UINC;
+	len = mcp25xxfd_cmd_prepare_write_reg(priv, &tx_ring->trigger_buf,
+					      addr, val, val);
+
 	mcp25xxfd_for_each_tx_obj(tx_ring, tx_obj, i)
-		mcp25xxfd_tx_ring_init_tx_obj(priv, tx_ring, tx_obj, i);
+		mcp25xxfd_tx_ring_init_tx_obj(priv, tx_ring, tx_obj, len, i);
 
 	/* RX */
 	mcp25xxfd_for_each_rx_ring(priv, rx_ring, i) {
@@ -1928,7 +1929,7 @@ mcp25xxfd_handle_eccif_recover(struct mcp25xxfd_priv *priv, u8 nr)
 
 	/* reload tx_obj into controller RAM ... */
 	tx_obj = &tx_ring->obj[nr];
-	err = spi_sync_transfer(priv->spi, &tx_obj->load.xfer, 1);
+	err = spi_sync_transfer(priv->spi, tx_obj->xfer, 1);
 	if (err)
 		return err;
 
@@ -2240,7 +2241,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 			flags |= MCP25XXFD_OBJ_FLAGS_BRS;
 	}
 
-	load_buf = &tx_obj->load.buf;
+	load_buf = &tx_obj->buf;
 	if (priv->devtype_data.quirks & MCP25XXFD_QUIRK_CRC_TX)
 		hw_tx_obj = &load_buf->crc.hw_tx_obj;
 	else
@@ -2267,7 +2268,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 		mcp25xxfd_spi_cmd_crc_set_len_in_ram(&load_buf->crc.cmd,
 						     len);
 		/* CRC */
-		len += sizeof(tx_obj->load.buf.crc.cmd);
+		len += sizeof(load_buf->crc.cmd);
 		crc = mcp25xxfd_crc16_compute(&load_buf->crc, len);
 		put_unaligned_be16(crc, (void *)load_buf + len);
 
@@ -2277,7 +2278,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 		len += sizeof(load_buf->nocrc.cmd);
 	}
 
-	tx_obj->load.xfer.len = len;
+	tx_obj->xfer[0].len = len;
 }
 
 static int mcp25xxfd_tx_obj_write(const struct mcp25xxfd_priv *priv,
