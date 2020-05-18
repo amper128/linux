@@ -1115,8 +1115,11 @@ static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
 	u32 trec;
 	int err;
 
-	/* Avoid waking up the controller if the interface is down. */
-	if (!(ndev->flags & IFF_UP))
+	/* Avoid waking up the controller if the interface is down or
+	 * the controller is in Bus Off.
+	 */
+	if (!(ndev->flags & IFF_UP) ||
+	    priv->can.state == CAN_STATE_BUS_OFF)
 		return 0;
 
 	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TREC, &trec);
