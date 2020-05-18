@@ -2140,17 +2140,6 @@ static irqreturn_t mcp25xxfd_irq(int irq, void *dev_id)
 				goto out_fail;
 		}
 
-		/* On the MCP2527FD and MCP2518FD, we don't get a
-		 * CERRIF IRQ on the transition TX ERROR_WARNING -> TX
-		 * ERROR_ACTIVE.
-		 */
-		if (intf_pending & MCP25XXFD_REG_INT_CERRIF ||
-		    priv->can.state > CAN_STATE_ERROR_ACTIVE) {
-			err = mcp25xxfd_handle(priv, cerrif);
-			if (err)
-				goto out_fail;
-		}
-
 		if (intf_pending & MCP25XXFD_REG_INT_SERRIF) {
 			err = mcp25xxfd_handle(priv, serrif);
 			if (err)
@@ -2167,6 +2156,27 @@ static irqreturn_t mcp25xxfd_irq(int irq, void *dev_id)
 			err = mcp25xxfd_handle(priv, spicrcif);
 			if (err)
 				goto out_fail;
+		}
+
+		/* On the MCP2527FD and MCP2518FD, we don't get a
+		 * CERRIF IRQ on the transition TX ERROR_WARNING -> TX
+		 * ERROR_ACTIVE.
+		 */
+		if (intf_pending & MCP25XXFD_REG_INT_CERRIF ||
+		    priv->can.state > CAN_STATE_ERROR_ACTIVE) {
+			err = mcp25xxfd_handle(priv, cerrif);
+			if (err)
+				goto out_fail;
+
+			/* In Bus Off we completely shut down the
+			 * controller. Every subsequent register read
+			 * will read bogus data, and if
+			 * MCP25XXFD_QUIRK_CRC_REG is enabled the CRC
+			 * check will fail, too. So leave IRQ handler
+			 * directly.
+			 */
+			if (priv->can.state == CAN_STATE_BUS_OFF)
+				return IRQ_HANDLED;
 		}
 
 		handled = IRQ_HANDLED;
