@@ -599,7 +599,7 @@ struct mcp25xxfd_tx_ring {
 	u8 obj_size;
 
 	struct mcp25xxfd_tx_obj obj[MCP25XXFD_TX_OBJ_NUM_MAX];
-	union mcp25xxfd_write_reg_buf trigger_buf;
+	union mcp25xxfd_write_reg_buf rts_buf;
 };
 
 struct mcp25xxfd_rx_ring {

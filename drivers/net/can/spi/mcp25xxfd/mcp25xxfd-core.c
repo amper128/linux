@@ -292,7 +292,7 @@ static void
 mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 			      const struct mcp25xxfd_tx_ring *ring,
 			      struct mcp25xxfd_tx_obj *tx_obj,
-			      const u8 trigger_buf_len,
+			      const u8 rts_buf_len,
 			      const u8 n)
 {
 	struct spi_transfer *xfer;
@@ -314,10 +314,10 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	xfer->cs_change_delay.value = 0;
 	xfer->cs_change_delay.unit = SPI_DELAY_UNIT_NSECS;
 
-	/* FIFO trigger */
+	/* FIFO request to send */
 	xfer = &tx_obj->xfer[1];
-	xfer->tx_buf = &ring->trigger_buf;
-	xfer->len = trigger_buf_len;
+	xfer->tx_buf = &ring->rts_buf;
+	xfer->len = rts_buf_len;
 
 	/* SPI message */
 	spi_message_init_with_transfers(&tx_obj->msg, tx_obj->xfer,
@@ -344,10 +344,10 @@ static void mcp25xxfd_ring_init(struct mcp25xxfd_priv *priv)
 	tx_ring->tail = 0;
 	tx_ring->base = mcp25xxfd_get_tef_obj_addr(tx_ring->obj_num);
 
-	/* FIFO trigger */
+	/* FIFO request to send */
 	addr = MCP25XXFD_REG_FIFOCON(MCP25XXFD_TX_FIFO);
 	val = MCP25XXFD_REG_FIFOCON_TXREQ | MCP25XXFD_REG_FIFOCON_UINC;
-	len = mcp25xxfd_cmd_prepare_write_reg(priv, &tx_ring->trigger_buf,
+	len = mcp25xxfd_cmd_prepare_write_reg(priv, &tx_ring->rts_buf,
 					      addr, val, val);
 
 	mcp25xxfd_for_each_tx_obj(tx_ring, tx_obj, i)
