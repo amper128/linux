@@ -1108,19 +1108,12 @@ static int mcp25xxfd_set_mode(struct net_device *ndev, enum can_mode mode)
 	return 0;
 }
 
-static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
-				      struct can_berr_counter *bec)
+static int __mcp25xxfd_get_berr_counter(const struct net_device *ndev,
+					struct can_berr_counter *bec)
 {
 	const struct mcp25xxfd_priv *priv = netdev_priv(ndev);
 	u32 trec;
 	int err;
-
-	/* Avoid waking up the controller if the interface is down or
-	 * the controller is in Bus Off.
-	 */
-	if (!(ndev->flags & IFF_UP) ||
-	    priv->can.state == CAN_STATE_BUS_OFF)
-		return 0;
 
 	err = regmap_read(priv->map_reg, MCP25XXFD_REG_TREC, &trec);
 	if (err)
@@ -1130,6 +1123,21 @@ static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
 	bec->rxerr = FIELD_GET(MCP25XXFD_REG_TREC_REC_MASK, trec);
 
 	return 0;
+}
+
+static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
+				      struct can_berr_counter *bec)
+{
+	const struct mcp25xxfd_priv *priv = netdev_priv(ndev);
+
+	/* Avoid waking up the controller if the interface is down or                                                                                                                                                                                                                     
+	 * the controller is in Bus Off.                                                                                                                                                                                                                                                  
+	 */                                                                                                                                                                                                                                                                               
+       if (!(ndev->flags & IFF_UP) ||                                                                                                                                                                                                                                                    
+           priv->can.state == CAN_STATE_BUS_OFF)                                                                                                                                                                                                                                         
+               return 0;
+
+	return __mcp25xxfd_get_berr_counter(ndev, bec);
 }
 
 static int mcp25xxfd_check_tef_tail(struct mcp25xxfd_priv *priv)
