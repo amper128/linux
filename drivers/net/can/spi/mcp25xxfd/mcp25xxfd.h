@@ -680,6 +680,7 @@ struct mcp25xxfd_priv {
 	struct regulator *reg_xceiver;
 
 	struct mcp25xxfd_devtype_data devtype_data;
+	struct can_berr_counter bec;
 
 	struct mcp25xxfd_dump dump;
 	atomic_t cnt;

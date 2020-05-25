@@ -1140,6 +1140,14 @@ static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
            priv->can.state == CAN_STATE_BUS_OFF)                                                                                                                                                                                                                                         
                return 0;
 
+	/* The controller is powered down during Bus Off, use saved
+	 * bec values.
+	 */
+	if (priv->can.state == CAN_STATE_BUS_OFF) {
+		*bec = priv->bec;
+		return 0;
+	}
+
 	return __mcp25xxfd_get_berr_counter(ndev, bec);
 }
 
@@ -1744,6 +1752,15 @@ static int mcp25xxfd_handle_cerrif(struct mcp25xxfd_priv *priv)
 	can_change_state(priv->ndev, cf, tx_state, rx_state);
 
 	if (new_state == CAN_STATE_BUS_OFF) {
+		/* As we're going to switch off the chip now, let's
+		 * save the error counters and return them to
+		 * userspace, if do_get_berr_counter() is called while
+		 * the chip is in Bus Off.
+		 */
+		err = __mcp25xxfd_get_berr_counter(priv->ndev, &priv->bec);
+		if (err)
+			return err;
+
 		mcp25xxfd_chip_stop(priv, CAN_STATE_BUS_OFF);
 		can_bus_off(priv->ndev);
 	}
