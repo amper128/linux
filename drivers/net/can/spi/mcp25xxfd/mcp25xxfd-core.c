@@ -1119,7 +1119,10 @@ static int __mcp25xxfd_get_berr_counter(const struct net_device *ndev,
 	if (err)
 		return err;
 
-	bec->txerr = FIELD_GET(MCP25XXFD_REG_TREC_TEC_MASK, trec);
+	if (trec & MCP25XXFD_REG_TREC_TXBO)
+		bec->txerr = 256;
+	else
+		bec->txerr = FIELD_GET(MCP25XXFD_REG_TREC_TEC_MASK, trec);
 	bec->rxerr = FIELD_GET(MCP25XXFD_REG_TREC_REC_MASK, trec);
 
 	return 0;
