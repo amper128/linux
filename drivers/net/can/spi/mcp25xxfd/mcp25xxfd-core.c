@@ -2661,9 +2661,9 @@ static int mcp25xxfd_register(struct mcp25xxfd_priv *priv)
 	if (err)
 		goto out_unregister_candev;
 
-	/* Put core into sleep mode and let pm_runtime_put() disable
-	 * the clocks and vdd. If CONFIG_PM is not enabled, the clocks
-	 * and vdd will stay powered.
+	/* Put controller into sleep mode and let pm_runtime_put()
+	 * disable the clocks and vdd. If CONFIG_PM is not enabled,
+	 * the clocks and vdd will stay powered.
 	 */
 	err = mcp25xxfd_chip_set_mode(priv, MCP25XXFD_REG_CON_MODE_SLEEP);
 	if (err)
