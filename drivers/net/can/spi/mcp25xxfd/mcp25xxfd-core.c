@@ -1133,11 +1133,8 @@ static int mcp25xxfd_get_berr_counter(const struct net_device *ndev,
 {
 	const struct mcp25xxfd_priv *priv = netdev_priv(ndev);
 
-	/* Avoid waking up the controller if the interface is down or
-	 * the controller is in Bus Off.
-	 */
-       if (!(ndev->flags & IFF_UP) ||
-           priv->can.state == CAN_STATE_BUS_OFF)
+	/* Avoid waking up the controller if the interface is down */
+       if (!(ndev->flags & IFF_UP))
                return 0;
 
 	/* The controller is powered down during Bus Off, use saved
