@@ -2771,7 +2771,7 @@ static int mcp25xxfd_probe(struct spi_device *spi)
 		return -ERANGE;
 	}
 
-	if (freq < MCP25XXFD_SYSCLOCK_HZ_MAX / MCP25XXFD_OSC_PLL_MULTIPLIER) {
+	if (freq <= MCP25XXFD_SYSCLOCK_HZ_MAX / MCP25XXFD_OSC_PLL_MULTIPLIER) {
 		dev_err(&spi->dev,
 			"Oscillator frequency (%u Hz) is too low and PLL is not supported.\n",
 			freq);
