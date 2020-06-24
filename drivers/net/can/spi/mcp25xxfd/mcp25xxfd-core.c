@@ -2741,7 +2741,8 @@ static int mcp25xxfd_probe(struct spi_device *spi)
 	u32 freq;
 	int err;
 
-	rx_int = devm_gpiod_get_optional(&spi->dev, "rx-int", GPIOD_IN);
+	rx_int = devm_gpiod_get_optional(&spi->dev, "microchip,rx-int",
+					 GPIOD_IN);
 	if (PTR_ERR(rx_int) == -EPROBE_DEFER)
 		return -EPROBE_DEFER;
 	else if (IS_ERR(rx_int))
