@@ -1031,8 +1031,7 @@ static int mcp25xxfd_chip_stop(struct mcp25xxfd_priv *priv,
 	return mcp25xxfd_chip_set_mode(priv, MCP25XXFD_REG_CON_MODE_SLEEP);
 }
 
-static int
-__mcp25xxfd_chip_start(struct mcp25xxfd_priv *priv, bool interrupts_enable)
+static int mcp25xxfd_chip_start(struct mcp25xxfd_priv *priv)
 {
 	int err;
 
@@ -1060,12 +1059,6 @@ __mcp25xxfd_chip_start(struct mcp25xxfd_priv *priv, bool interrupts_enable)
 
 	priv->can.state = CAN_STATE_ERROR_ACTIVE;
 
-	if (interrupts_enable) {
-		err = mcp25xxfd_chip_interrupts_enable(priv);
-		if (err)
-			goto out_chip_stop;
-	}
-
 	err = mcp25xxfd_chip_set_normal_mode(priv);
 	if (err)
 		goto out_chip_stop;
@@ -1078,18 +1071,6 @@ __mcp25xxfd_chip_start(struct mcp25xxfd_priv *priv, bool interrupts_enable)
 	return err;
 }
 
-static inline int
-mcp25xxfd_chip_start_interrupts_enabled(struct mcp25xxfd_priv *priv)
-{
-	return __mcp25xxfd_chip_start(priv, true);
-}
-
-static inline int
-mcp25xxfd_chip_start_interrupts_disabled(struct mcp25xxfd_priv *priv)
-{
-	return __mcp25xxfd_chip_start(priv, false);
-}
-
 static int mcp25xxfd_set_mode(struct net_device *ndev, enum can_mode mode)
 {
 	struct mcp25xxfd_priv *priv = netdev_priv(ndev);
@@ -1097,9 +1078,15 @@ static int mcp25xxfd_set_mode(struct net_device *ndev, enum can_mode mode)
 
 	switch (mode) {
 	case CAN_MODE_START:
-		err = mcp25xxfd_chip_start_interrupts_enabled(priv);
+		err = mcp25xxfd_chip_start(priv);
 		if (err)
 			return err;
+
+		err = mcp25xxfd_chip_interrupts_enable(priv);
+		if (err) {
+			mcp25xxfd_chip_stop(priv, CAN_STATE_STOPPED);
+			return err;
+		}
 
 		netif_wake_queue(ndev);
 		break;
@@ -2409,7 +2396,7 @@ static int mcp25xxfd_open(struct net_device *ndev)
 
 	can_rx_offload_enable(&priv->offload);
 
-	err = mcp25xxfd_chip_start_interrupts_disabled(priv);
+	err = mcp25xxfd_chip_start(priv);
 	if (err)
 		goto out_can_rx_offload_disable;
 
