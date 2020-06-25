@@ -332,14 +332,14 @@ mcp25xxfd_regmap_crc_read(void *context,
 
 		netdev_dbg(priv->ndev,
 			   "CRC read error at address 0x%04x (length=%zd, data=%*ph, CRC=0x%04x) retrying.\n",
-			   reg, val_len, val_len, buf_rx->data,
+			   reg, val_len, (int)val_len, buf_rx->data,
 			   get_unaligned_be16(buf_rx->data + val_len));
 	}
 
 	if (err) {
 		netdev_info(priv->ndev,
 			    "CRC read error at address 0x%04x (length=%zd, data=%*ph, CRC=0x%04x).\n",
-			    reg, val_len, val_len, buf_rx->data,
+			    reg, val_len, (int)val_len, buf_rx->data,
 			    get_unaligned_be16(buf_rx->data + val_len));
 
 		return err;
