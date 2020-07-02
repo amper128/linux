@@ -2394,11 +2394,11 @@ static int mcp25xxfd_open(struct net_device *ndev)
 	if (err)
 		goto out_mcp25xxfd_ring_free;
 
-	can_rx_offload_enable(&priv->offload);
-
 	err = mcp25xxfd_chip_start(priv);
 	if (err)
 		goto out_can_rx_offload_disable;
+
+	can_rx_offload_enable(&priv->offload);
 
 	err = request_threaded_irq(spi->irq, NULL, mcp25xxfd_irq,
 				   IRQF_ONESHOT, dev_name(&spi->dev),
@@ -2436,8 +2436,8 @@ static int mcp25xxfd_stop(struct net_device *ndev)
 
 	netif_stop_queue(ndev);
 	mcp25xxfd_chip_interrupts_disable(priv);
-	can_rx_offload_disable(&priv->offload);
 	free_irq(ndev->irq, priv);
+	can_rx_offload_disable(&priv->offload);
 	mcp25xxfd_chip_stop(priv, CAN_STATE_STOPPED);
 	mcp25xxfd_transceiver_disable(priv);
 	mcp25xxfd_ring_free(priv);
