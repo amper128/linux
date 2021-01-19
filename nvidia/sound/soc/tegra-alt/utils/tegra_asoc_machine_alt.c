@@ -4133,7 +4133,9 @@ int tegra_asoc_populate_dai_links(struct platform_device *pdev)
 	 * taken care during error exit of machine driver probe()
 	 */
 	if (ret < 0) {
-		of_node_put(subnp);
+		if (subnp) {
+			of_node_put(subnp);
+		}
 		return ret;
 	}
 
